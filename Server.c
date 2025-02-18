@@ -135,7 +135,6 @@ void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr
         }
 
         else {
-            connected++;
             // send message to server when client is connected
             if (sendmsg(c_sock, (struct msghdr*)&message, 0) < 0) {
                 printf("Failed to transmit message to server.\n");
