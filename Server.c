@@ -8,13 +8,13 @@
 
 const int BUFFER_SIZE = 1024;
 const int ADDRESS_LENGTH = 16;
+const int TOTAL_CONNECTIONS = 10;
 typedef struct sockaddr_in sockaddr_in;
 
 // Server structure
 struct Server {
 int server_socket, client_socket, flag;
 sockaddr_in svr_addr, conn_addr;
-char* buffer;
 }; 
 typedef struct Server Server;
 
@@ -24,6 +24,8 @@ Server setSocketAddr(Server s, int port, const char ip[]);
 // Start connection
 int activate_server(int server_socket, sockaddr_in s_addr);
 
+// communicate with clients
+void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr_in cAddr);
 
 int main(int argc, char* argv[]) {
     // check for missing user input on command interface
@@ -42,6 +44,7 @@ int main(int argc, char* argv[]) {
     }
     // prepare socket for binding to server and listening to connections
     s.server_socket = activate_server(s.server_socket, s.svr_addr);
+    communicate_with_client(s.server_socket, s.client_socket, s.svr_addr, s.conn_addr);
 
     // close all open sockets
     printf("\nClosing sockets...\n");
@@ -102,7 +105,7 @@ int activate_server(int server_socket, sockaddr_in s_addr) {
 
     printf("Binded socket to server.\nPreparing to listen for connections...\n\n");
 
-    errno = listen(server_socket, 3);
+    errno = listen(server_socket, TOTAL_CONNECTIONS);
     if (errno < 0) {
         perror("Socket failed to listen.\n");
         return errno;
@@ -110,4 +113,41 @@ int activate_server(int server_socket, sockaddr_in s_addr) {
 
     printf("Server is listening for upcoming connections...\n");
     return server_socket;
+}
+
+
+void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr_in cAddr) {
+    // initialize client address to server address
+    char buffer[BUFFER_SIZE];
+    int connected = 1;
+    const char* message = "User connected to the chat server.\n\n";
+    int cAddrSize = sizeof(cAddr);
+    cAddr.sin_addr = sAddr.sin_addr;
+    cAddr.sin_family = sAddr.sin_family;
+    cAddr.sin_port = sAddr.sin_port;
+
+    // attempt to detect connections from client
+    while (connected > 0) {
+        c_sock = accept(s_sock, (struct sockaddr*)&cAddr, &cAddrSize);
+        if (c_sock < 0) {
+            perror("Connection is not established.\n");
+            connected = 0;
+        }
+
+        else {
+            connected++;
+            // send message to server when client is connected
+            if (sendmsg(c_sock, (struct msghdr*)&message, 0) < 0) {
+                printf("Failed to transmit message to server.\n");
+                connected = 0;
+            }
+            // receive message from client socket
+            if (recvmsg(s_sock, (struct msghdr*)&message, 0) < 0) {
+                printf("Failed to receive message from client.\n");
+                connected = 0;
+            }
+        }
+    }
+    
+
 }
