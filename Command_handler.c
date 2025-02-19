@@ -2,7 +2,7 @@
 #include <stdlib.h> 
 #include <string.h>
 #include "connection_manager.h"
-#include "client.c" 
+#include "Client.c" 
 
 void execute_command(char* input) { 
 	char command[256]; 
@@ -23,15 +23,15 @@ void execute_command(char* input) {
 else if (strcmp(command, "list") == 0) { 
 	list_connections(); 
 }
-else if (strcmp(command, "connect", 7) == 0) { 
+else if (strncmp(command, "connect", 7) == 0) { 
 	char ip[ADDRESS_LENGTH]; 
 	int port; 
-	sscanf(input, "connect %s %d, ip, &ort); 
+	sscanf(input, "connect %s %d, ip, &port"); 
 	connect_to_peer(ip, port); 
 } 
 else if (strncmp(command, "terminate", 9) == 0) { 
 	int id; 
-	sscanf(input, "terminate %d, &id); 
+	sscanf(input, "terminate %d, &id"); 
 	terminate_connection(id); 
 } 
 else if (strncmp(command, "send", 4) == 0) { 
