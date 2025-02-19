@@ -6,14 +6,14 @@
 #include <arpa/inet.h>
 #include "connection_manager.h"
 
-int connect_to_peer(const char* ip, int port +) { 
+int connect_to_peer(const char* ip, int port) { 
 	int sock;
 	struct sockaddr_in peer_addr;
 	
 	// Create socket
 	sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) { 
-		perror("Socket creation failed"):
+		perror("Socket creation failed");
 		return -1; 
 	}
 
@@ -40,11 +40,14 @@ int connect_to_peer(const char* ip, int port +) {
 		if (!conn) { 
 			printf("Invalid connection ID!\n"); 
 			return; 
-	}
+		}
 
 	if(send(conn->socket_fd, message, strlen(message), 0) < 0) { 
 		perror("Message send failed"); 
 	} else {
-		printf("Message sent to %s:%d\n", conn->ip, conn_->port); 
-	} 
+		printf("Message sent to %s:%d\n", conn->ip, conn->port); 
+	
+		}
+	
 }
+	
