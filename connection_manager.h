@@ -1,3 +1,4 @@
+// Done by Hector Velez, fixed typos by Kenneth
 #ifndef CONNECTION_MANAGER_H
 #define CONNECTION_MANAGER_H 
 
