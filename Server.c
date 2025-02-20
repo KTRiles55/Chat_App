@@ -1,4 +1,3 @@
-// Done by Hector Velez, fixed typos by Kenneth
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
