@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include "connection_manager.h"
 
+
 int connect_to_peer(const char* ip, int port) { 
 	int sock;
 	struct sockaddr_in peer_addr;

@@ -36,13 +36,13 @@ else if (strncmp(command, "terminate", 9) == 0) {
 } 
 else if (strncmp(command, "send", 4) == 0) { 
 	int id; 
-	char message[100];
+	const char* message[100];
 	sscanf(input, "send %d %[^\n]", &id, message); 
 	send_message(id, message); 
 }
 else if (strcmp(command, "exit") == 0) { 
 	printf("Closing all connections and exiting...\n"); 
-	exit(0); 
+	//exit(0); 
 }
 else {
 	printf("Unknown command. Type 'help' for a list of commands.\n");

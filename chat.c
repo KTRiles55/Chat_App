@@ -5,7 +5,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <regex.h>
+#include "Command_handler.c"
 #include "Server.c"
+#include "Client.c"
 
 
 int main(int argc, char* argv[]) {
@@ -14,6 +16,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "\nMissing port number and/or IP address.\nPlease enter in form: ./[*Program exec*] [*Port number*] [*IP Address*]\n\n");
         return -1;
     }
+
     Server s;
     int port = atoi(argv[1]);
     const char* ip = argv[2]; 
@@ -25,7 +28,12 @@ int main(int argc, char* argv[]) {
     }
     // prepare socket for binding to server and listening to connections
     s.server_socket = activate_server(s.server_socket, s.svr_addr);
-    communicate_with_client(s.server_socket, s.client_socket, s.svr_addr, s.conn_addr);
+    char* input;
+    while (input != "exit") {
+        execute_command(input);
+    } 
+
+    //communicate_with_client(s.server_socket, s.client_socket, s.svr_addr, s.conn_addr);
 
     // close all open sockets
     printf("\nClosing sockets...\n");

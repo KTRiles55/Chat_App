@@ -27,33 +27,6 @@ int activate_server(int server_socket, sockaddr_in s_addr);
 // communicate with clients
 void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr_in cAddr);
 
-int main(int argc, char* argv[]) {
-    // check for missing user input on command interface
-    if ((argv[1] == NULL) || (argv[2] == NULL)) {
-        fprintf(stderr, "\nMissing port number and/or IP address.\nPlease enter in form: ./[*Program exec*] [*Port number*] [*IP Address*]\n\n");
-        return -1;
-    }
-    Server s;
-    int port = atoi(argv[1]);
-    const char* ip = argv[2]; 
-    s = setSocketAddr(s, port, ip);
-    // check if port number and ip are valid
-    if (s.flag > 0) { 
-        fprintf(stderr, "Port number and/or IP address invalid.\nUnable to connect.\n\n");
-        return s.flag;
-    }
-    // prepare socket for binding to server and listening to connections
-    s.server_socket = activate_server(s.server_socket, s.svr_addr);
-    communicate_with_client(s.server_socket, s.client_socket, s.svr_addr, s.conn_addr);
-
-    // close all open sockets
-    printf("\nClosing sockets...\n");
-    close(s.server_socket);
-    close(s.client_socket);
-    printf("Successfully disconnected.\n\n");
-    return 0;
-}
-
 
 Server setSocketAddr(Server s, int port, const char ip[]) {
     // set port number and ip
@@ -74,7 +47,6 @@ Server setSocketAddr(Server s, int port, const char ip[]) {
     ipValid = regcomp(&re, pattern, REG_EXTENDED);
     ipValid = regexec(&re, ip, 0, NULL, 0);
     if (ipValid == 0) {
-        printf("\nSetting IP address to %s\n\n", ip);
         s.svr_addr.sin_addr.s_addr = inet_addr(ip);
     }
 
@@ -96,22 +68,18 @@ int activate_server(int server_socket, sockaddr_in s_addr) {
         return server_socket;
     }
 
-    printf("Connected server socket.\nBinding socket to server...\n\n");
     errno = bind(server_socket, (struct sockaddr *)&s_addr, sAddrLen);
     if (errno < 0) {
         perror("Failed to bind socket.\n");
         return errno;
     }
 
-    printf("Binded socket to server.\nPreparing to listen for connections...\n\n");
-
     errno = listen(server_socket, TOTAL_CONNECTIONS);
     if (errno < 0) {
         perror("Socket failed to listen.\n");
         return errno;
     }
-
-    printf("Server is listening for upcoming connections...\n");
+    
     return server_socket;
 }
 
