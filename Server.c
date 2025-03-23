@@ -5,116 +5,119 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <regex.h>
+#include <string.h>
+#include <errno.h>
 
-const int BUFFER_SIZE = 1024;
-const int ADDRESS_LENGTH = 16;
-const int TOTAL_CONNECTIONS = 10;
+#define BUFFER_SIZE 1024
+#define TOTAL_CONNECTIONS 10
+
 typedef struct sockaddr_in sockaddr_in;
 
-// Server structure
 struct Server {
-int server_socket, client_socket, flag;
-sockaddr_in svr_addr, conn_addr;
-}; 
+    int server_socket;
+    int client_socket;
+    int flag;
+    sockaddr_in svr_addr;
+    sockaddr_in conn_addr;
+};
 typedef struct Server Server;
 
 // Initialize socket address
 Server setSocketAddr(Server s, int port, const char ip[]);
 
 // Start connection
-int activate_server(int server_socket, sockaddr_in s_addr);
+int activate_server(sockaddr_in s_addr);
 
 // communicate with clients
-void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr_in cAddr);
-
+void communicate_with_client(int s_sock);
 
 Server setSocketAddr(Server s, int port, const char ip[]) {
-    // set port number and ip
-    int ipValid = -1;
+    s.flag = 0; // Initialize flag
     regex_t re;
-    if (port < 0) {
-        fprintf(stderr, "\n\nThat is not a number! Please try again.\n\n");  
+
+    if (port <= 0 || port > 65535) {
+        fprintf(stderr, "\nInvalid port number! Please use range 1-65535.\n\n");  
         s.flag = 1;
+        return s;
     }
     s.svr_addr.sin_port = htons(port);
-
-    // set Internet protocol family
     s.svr_addr.sin_family = AF_INET;
 
-    // set Ip address 
-    // check if Ip is valid
-    const char* pattern = "^(([0-9]|[0-9][0-9]|[1][0-9][0-9]|[2][0-4][0-9]|[2][5][0-5])\\.){3}([0-9]|[0-9][0-9]|[1][0-9][0-9]|[2][0-4][0-9]|[2][5][0-5])$";
-    ipValid = regcomp(&re, pattern, REG_EXTENDED);
-    ipValid = regexec(&re, ip, 0, NULL, 0);
-    if (ipValid == 0) {
+    const char* pattern = "^(([0-9]{1,3})\\.){3}([0-9]{1,3})$";
+    if (regcomp(&re, pattern, REG_EXTENDED) != 0 || regexec(&re, ip, 0, NULL, 0) != 0) {
+        fprintf(stderr, "\nInvalid IP address format! Please try again.\n\n");
+        s.flag = 1;
+    } else {
         s.svr_addr.sin_addr.s_addr = inet_addr(ip);
     }
-
-    else {
-        fprintf(stderr, "\n\nInvalid IP address! Please try again.\n\n");
-        s.flag = 1;
-    }
     regfree(&re);
+    s.client_socket = -1; // initialize to an invalid socket
     return s;
 }
 
-int activate_server(int server_socket, sockaddr_in s_addr) {
-    // connect server socket
-    int errno;
-    int sAddrLen = sizeof(s_addr);
-    server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+int activate_server(sockaddr_in s_addr) {
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {
-        perror("Failed to connect socket.\n");
-        return server_socket;
+        perror("Socket creation failed");
+        return -1;
     }
 
-    errno = bind(server_socket, (struct sockaddr *)&s_addr, sAddrLen);
-    if (errno < 0) {
-        perror("Failed to bind socket.\n");
-        return errno;
+    int opt = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt failed");
+        close(server_socket);
+        return -1;
     }
 
-    errno = listen(server_socket, TOTAL_CONNECTIONS);
-    if (errno < 0) {
-        perror("Socket failed to listen.\n");
-        return errno;
+    if (bind(server_socket, (struct sockaddr *)&s_addr, sizeof(s_addr)) < 0) {
+        perror("Failed to bind socket");
+        close(server_socket);
+        return -1;
     }
-    
+
+    if (listen(server_socket, TOTAL_CONNECTIONS) < 0) {
+        perror("Socket failed to listen");
+        close(server_socket);
+        return -1;
+    }
+
+    printf("Server is activated and listening...\n");
     return server_socket;
 }
 
-
-void communicate_with_client(int s_sock, int c_sock, sockaddr_in sAddr, sockaddr_in cAddr) {
-    // initialize client address to server address
+void communicate_with_client(int s_sock) {
     char buffer[BUFFER_SIZE];
-    int connected = 1;
-    const char* message = "User connected to the chat server.\n\n";
-    int cAddrSize = sizeof(cAddr);
-    cAddr.sin_addr = sAddr.sin_addr;
-    cAddr.sin_family = sAddr.sin_family;
-    cAddr.sin_port = sAddr.sin_port;
+    int c_sock;
+    sockaddr_in cAddr;
+    socklen_t cAddrSize = sizeof(cAddr);
 
-    // attempt to detect connections from client
-    while (connected > 0) {
+    while (1) {
         c_sock = accept(s_sock, (struct sockaddr*)&cAddr, &cAddrSize);
         if (c_sock < 0) {
-            perror("Connection is not established.\n");
-            connected = 0;
+            perror("Accept failed");
+            continue; // try next connection
         }
 
-        else {
-            // send message to server when client is connected
-            if (sendmsg(c_sock, (struct msghdr*)&message, 0) < 0) {
-                printf("Failed to transmit message to server.\n");
-                connected = 0;
-            }
-            // receive message from client socket
-            if (recvmsg(s_sock, (struct msghdr*)&message, 0) < 0) {
-                printf("Failed to receive message from client.\n");
-                connected = 0;
-            }
+        printf("Client connected: %s\n", inet_ntoa(cAddr.sin_addr));
+        
+        const char* welcome_msg = "User connected to the chat server.\n";
+        if (send(c_sock, welcome_msg, strlen(welcome_msg), 0) < 0) {
+            perror("Failed to transmit message to client");
+            close(c_sock);
+            continue;
         }
+
+        int recv_len;
+        while ((recv_len = recv(c_sock, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+            buffer[recv_len] = '\0';
+            printf("Received: %s\n", buffer);
+        }
+
+        if (recv_len < 0) {
+            perror("Failed to receive message from client");
+        }
+
+        printf("Client disconnected: %s\n", inet_ntoa(cAddr.sin_addr));
+        close(c_sock);
     }
-    
-
 }
