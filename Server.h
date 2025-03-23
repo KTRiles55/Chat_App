@@ -1,3 +1,4 @@
+// Done by Hector Velez, fixed typos by Kenneth
 #ifndef SERVER_H
 #define SERVER_H
 
