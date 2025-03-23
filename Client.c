@@ -37,7 +37,7 @@ int connect_to_peer(const char* ip, int port) {
 	return sock; 
 	}
 
-	void send_message(int conn_id, const char* message) { 
+	void send_message(int conn_id, const char message[]) { 
 		Connection* conn = get_connection(conn_id);
 		if (!conn) { 
 			printf("Invalid connection ID!\n"); 
