@@ -1,4 +1,4 @@
-// Done by Hector, edited by Kenneth
+// Done by Kenneth
 #include "Server.h"
 #include <stdio.h>
 #include <stdlib.h>
