@@ -28,8 +28,6 @@ int main(int argc, char* argv[]) {
     char input[256];
     while (fgets(input, sizeof(input), stdin)) {
         if (strncmp(input, "exit", 4) == 0) break;
-        else if (strncmp(input, "myip", 4) == 0) { printf(ip); }
-        else if (strncmp(input, "myport", 6) == 0) { printf(port); }
         execute_command(input);
     }
 
