@@ -1,9 +1,11 @@
 // Done by Kenneth
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "Server.h"
 #include "Client.h"
 #include "Command_handler.h"
+#include <string.h>
 
 int main(int argc, char* argv[]) {
     if (argc < 3) {
@@ -14,18 +16,20 @@ int main(int argc, char* argv[]) {
     Server s;
     int port = atoi(argv[1]);
     const char* ip = argv[2];
-    s = setSocketAddr(s, port, ip);
+    s = setSocketAddr(port, ip);
 
     if (s.flag > 0) {
         fprintf(stderr, "Invalid port number and/or IP address.\n");
         return s.flag;
     }
 
-    s.server_socket = activate_server(s.server_socket, s.svr_addr);
+    s.server_socket = activate_server(s.svr_addr);
 
     char input[256];
     while (fgets(input, sizeof(input), stdin)) {
         if (strncmp(input, "exit", 4) == 0) break;
+        else if (strncmp(input, "myip", 4) == 0) { printf(ip); }
+        else if (strncmp(input, "myport", 6) == 0) { printf(port); }
         execute_command(input);
     }
 
