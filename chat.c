@@ -28,7 +28,15 @@ int main(int argc, char* argv[]) {
     char input[256];
     while (fgets(input, sizeof(input), stdin)) {
         if (strncmp(input, "exit", 4) == 0) break;
-        execute_command(input);
+        else if (strncmp(input, "myip", 4) == 0) {
+            printf("%s\n", ip); 
+        }
+        else if (strncmp(input, "myport", 6) == 0) {
+            printf("%d\n", port);
+        }
+        else {
+            execute_command(input);
+        }
     }
 
     printf("\nClosing sockets...\n");
