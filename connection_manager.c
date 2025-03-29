@@ -8,6 +8,8 @@
 static Connection connections[MAX_CONNECTIONS];
 static int connection_count = 0;
 
+const int getConnectionCount() { return connection_count; }
+
 void add_connection(int sock, const char* ip, int port) {
     if (connection_count >= MAX_CONNECTIONS) {
         printf("Maximum connections reached!\n");

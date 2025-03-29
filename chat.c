@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     }
 
     s.server_socket = activate_server(s.svr_addr);
-
+    communicate_with_client(s.server_socket);
     char input[256];
     while (fgets(input, sizeof(input), stdin)) {
         if (strncmp(input, "exit", 4) == 0) break;

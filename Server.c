@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <regex.h>
 #include <string.h>
+#include "connection_manager.h"
 
 Server setSocketAddr(int port, const char ip[]) {
     Server s;
@@ -43,7 +44,7 @@ int activate_server(sockaddr_in s_addr) {
         return -1;
     }
 
-    if (listen(server_socket, TOTAL_CONNECTIONS) < 0) {
+    if (listen(server_socket, MAX_CONNECTIONS) < 0) {
         perror("Socket failed to listen");
         close(server_socket);
         return -1;
@@ -56,23 +57,23 @@ int activate_server(sockaddr_in s_addr) {
 void communicate_with_client(int server_socket) {
     char buffer[BUFFER_SIZE];
     sockaddr_in client_addr;
+    Connection* conn;
     socklen_t client_len = sizeof(client_addr);
     int client_socket;
 
-    while (1) {
-        client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
-        if (client_socket < 0) {
-            perror("Accept failed");
-            continue;
-        }
-        printf("Client connected: %s\n", inet_ntoa(client_addr.sin_addr));
-        send(client_socket, "Welcome to the server!\n", 23, 0);
+    client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+    add_connection(client_socket, (const char*)&client_addr.sin_addr, client_addr.sin_port);
+    conn = get_connection(getConnectionCount()-1);
+    if (client_socket < 0) {
+        perror("Accept failed");
+        return;
+    }
+    printf("User %d has entered the chat.\n", conn->id);
+    send(client_socket, "Welcome to the Server!\n", 23, 0);
 
-        int bytes_received;
-        while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
-            buffer[bytes_received] = '\0';
-            printf("Received: %s\n", buffer);
-        }
-        close(client_socket);
+    int bytes_received;
+    while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+        buffer[bytes_received] = '\0';
+        //printf("Received:\n%s", buffer);
     }
 }

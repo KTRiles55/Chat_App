@@ -12,6 +12,7 @@ typedef struct {
 	int port; 
 } Connection; 
 
+const int getConnectionCount();
 void add_connection(int sock, const char* ip, int port); 
 Connection* get_connection(int id); 
 void list_connections(); 

@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 1024
-#define TOTAL_CONNECTIONS 10
 
 typedef struct sockaddr_in sockaddr_in;
 
@@ -15,6 +14,7 @@ typedef struct Server {
     int flag;
     sockaddr_in svr_addr;
     sockaddr_in conn_addr;
+
 } Server;
 
 Server setSocketAddr(int port, const char ip[]);
