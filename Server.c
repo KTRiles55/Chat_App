@@ -9,22 +9,19 @@
 #include <string.h>
 #include "connection_manager.h"
 
-Server setSocketAddr(int port, const char ip[]) {
+Server setSocketAddr(int port, uint32_t ip) {
     Server s;
     s.flag = 0;
 
-    regex_t re;
-    const char* pattern = "^(([0-9]{1,3})\\.){3}([0-9]{1,3})$";
-    if (port <= 0 || port > 65535 || regcomp(&re, pattern, REG_EXTENDED) != 0 || regexec(&re, ip, 0, NULL, 0) != 0) {
-        fprintf(stderr, "\nInvalid port number or IP address!\n");
+    if (port <= 0 || port > 65535) {
+        fprintf(stderr, "\nInvalid port number!\n");
         s.flag = 1;
     } else {
         s.svr_addr.sin_family = AF_INET;
         s.svr_addr.sin_port = htons(port);
-        s.svr_addr.sin_addr.s_addr = inet_addr(ip);
+        s.svr_addr.sin_addr.s_addr = htonl(ip);
         s.client_socket = -1;
     }
-    regfree(&re);
     return s;
 }
 
@@ -56,10 +53,10 @@ int activate_server(sockaddr_in s_addr) {
 
 void communicate_with_client(int server_socket) {
     char buffer[BUFFER_SIZE];
+    int client_socket;
     sockaddr_in client_addr;
     Connection* conn;
     socklen_t client_len = sizeof(client_addr);
-    int client_socket;
 
     client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
     add_connection(client_socket, (const char*)&client_addr.sin_addr, client_addr.sin_port);
