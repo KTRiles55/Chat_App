@@ -8,6 +8,8 @@
 #include <regex.h>
 #include <string.h>
 #include "connection_manager.h"
+#include <pthread.h>
+
 
 Server setSocketAddr(int port, uint32_t ip) {
     Server s;
