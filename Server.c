@@ -9,6 +9,7 @@
 #include <string.h>
 #include "connection_manager.h"
 
+
 Server setSocketAddr(int port, uint32_t ip) {
     Server s;
     s.flag = 0;
@@ -51,26 +52,42 @@ int activate_server(sockaddr_in s_addr) {
     return server_socket;
 }
 
-void communicate_with_client(int server_socket) {
-    char buffer[BUFFER_SIZE];
-    int client_socket;
-    sockaddr_in client_addr;
-    Connection* conn;
-    socklen_t client_len = sizeof(client_addr);
+void client_handler(void* socket_desc) {
+    int client_socket = *(int*)socket_desc;
+    //char buffer[BUFFER_SIZE];
+    //int recv_len;
 
-    client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
-    add_connection(client_socket, (const char*)&client_addr.sin_addr, client_addr.sin_port);
-    conn = get_connection(getConnectionCount()-1);
-    if (client_socket < 0) {
-        perror("Accept failed");
-        return;
-    }
-    printf("User %d has entered the chat.\n", conn->id);
-    send(client_socket, "Welcome to the Server!\n", 23, 0);
+    /**send(client_socket, "Connected to chat server\n", 25, 0);
 
-    int bytes_received;
-    while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
-        buffer[bytes_received] = '\0';
-        //printf("Received:\n%s", buffer);
+    while ((recv_len = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
+        buffer[recv_len] = '\0';
+        printf("Message received: %s\n", buffer);
     }
+
+    if (recv_len == 0)
+        printf("Client disconnected\n");
+    else
+        perror("recv failed");**/
+
+    close(client_socket);
+    free(socket_desc); // Free allocated memory
+    return;
+}
+
+int communicate_with_client(int server_socket) {
+    int client_socket, c;
+    struct sockaddr_in client_addr;
+    c = sizeof(struct sockaddr_in);
+
+      // Always loop until the server is intentionally stopped
+        client_socket = accept(server_socket, (struct sockaddr*)&client_addr, (socklen_t*)&c);
+
+        if (client_socket < 0) {
+            perror("Accept failed");
+            return -1;  // Exit the loop if accept() fails
+        }
+
+        printf("New client connected: %s\n", inet_ntoa(client_addr.sin_addr));
+
+        return client_socket;
 }

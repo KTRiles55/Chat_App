@@ -19,6 +19,7 @@ typedef struct Server {
 
 Server setSocketAddr(int port, uint32_t ip);
 int activate_server(sockaddr_in s_addr);
-void communicate_with_client(int server_socket);
+void client_handler(void* socket_desc);
+int communicate_with_client(int server_socket);
 
 #endif // SERVER_H

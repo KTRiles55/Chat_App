@@ -8,6 +8,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/select.h>
+#include <pthread.h>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -16,13 +18,10 @@ int main(int argc, char* argv[]) {
     }
     
     Server s;
-    int connection = 1;
+    struct sockaddr_in sa;
     const char ipAddress[INET_ADDRSTRLEN];
     int port = atoi(argv[1]);
-    uint32_t ip;
     s = setSocketAddr(port, INADDR_ANY);
-    ip = s.svr_addr.sin_addr.s_addr;
-    
 
     if (s.flag > 0) {
         fprintf(stderr, "Invalid port number.\n");
@@ -31,30 +30,48 @@ int main(int argc, char* argv[]) {
 
     s.server_socket = activate_server(s.svr_addr);
     char input[256];
-    while (connection > 0) {
-        communicate_with_client(s.server_socket);
-    while (fgets(input, sizeof(input), stdin)) {
+
+    // Handle user commands and client communication concurrently
+    while (1) {
+        // Accept client connections
+        int* new_sock = malloc(sizeof(int));
+        *new_sock = communicate_with_client(s.server_socket);
+        if (*new_sock < 0) {
+            perror("Accept failed");
+            free(new_sock);
+            continue;
+        }
+
+        printf("Client connected\n");
+
+        // Create a new thread to handle this client
+        pthread_t client_thread;
+        if (pthread_create(&client_thread, NULL, (void*)client_handler, (void*)new_sock) < 0) {
+            perror("Thread creation failed");
+            free(new_sock);
+            continue;
+        }
+
+        // Handle user commands (exit, myip, etc.)
+        scanf("%s", input);
+
         if (strncmp(input, "exit", 4) == 0) {
-            connection = 0;
-            break;
+            printf("Exiting...\n");
+            break;  // Exit the loop and shut down the server
         }
         else if (strncmp(input, "myip", 4) == 0) {
-            inet_ntop(AF_INET, &ip, (char*)ipAddress, INET_ADDRSTRLEN);
-            printf("%s\n", ipAddress); 
+            inet_ntop(AF_INET, &sa.sin_addr, (char*)ipAddress, INET_ADDRSTRLEN);
+            printf("Server IP: %s\n", ipAddress);
         }
         else if (strncmp(input, "myport", 6) == 0) {
-            printf("%d\n", port);
+            printf("Server Port: %d\n", ntohs(sa.sin_port));
         }
         else {
             execute_command(input);
         }
     }
-}
-    
-    printf("\nClosing sockets...\n");
-    close(s.server_socket);
-    close(s.client_socket);
-    printf("Successfully disconnected.\n\n");
 
+    pthread_exit(NULL);
+    close(s.server_socket);  // Close the server socket
     return 0;
 }
