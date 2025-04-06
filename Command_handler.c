@@ -21,12 +21,8 @@ void execute_command(char* input) {
         printf("8. exit - Exit chat\n");
     } else if (strcmp(command, "list") == 0) {
         list_connections();
-    } else if (strncmp(command, "connect", 7) == 0) {
-        char ip[ADDRESS_LENGTH]; int port;
-        sscanf(input, "connect %s %d", ip, &port);
-        connect_to_peer(ip, port);
-    }
-     else if (strncmp(command, "terminate", 9) == 0) {
+    } 
+    else if (strncmp(command, "terminate", 9) == 0) {
         int id;
         sscanf(input, "terminate %d", &id);
         terminate_connection(id);

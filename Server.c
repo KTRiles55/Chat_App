@@ -5,19 +5,16 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <regex.h>
 #include <string.h>
-#include "connection_manager.h"
 #include <pthread.h>
-
-
+#include "connection_manager.h"
 
 Server setSocketAddr(int port, uint32_t ip) {
     Server s;
     s.flag = 0;
 
     if (port <= 0 || port > 65535) {
-        fprintf(stderr, "\nInvalid port number!\n");
+        fprintf(stderr, "Invalid port number!\n");
         s.flag = 1;
     } else {
         s.svr_addr.sin_family = AF_INET;
@@ -39,33 +36,21 @@ int activate_server(sockaddr_in s_addr) {
     setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     if (bind(server_socket, (struct sockaddr *)&s_addr, sizeof(s_addr)) < 0) {
-        perror("Failed to bind socket");
+        perror("Bind failed");
         close(server_socket);
         return -1;
     }
 
     if (listen(server_socket, MAX_CONNECTIONS) < 0) {
-        perror("Socket failed to listen");
+        perror("Listen failed");
         close(server_socket);
         return -1;
     }
 
-    printf("Server is activated and listening...\n");
+    printf("Server activated and listening...\n");
     return server_socket;
 }
 
-<<<<<<< HEAD
-void client_handler(void* socket_desc) {
-    int client_socket = *(int*)socket_desc;
-    //char buffer[BUFFER_SIZE];
-    //int recv_len;
-
-    /**send(client_socket, "Connected to chat server\n", 25, 0);
-
-    while ((recv_len = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
-        buffer[recv_len] = '\0';
-        printf("Message received: %s\n", buffer);
-=======
 void* client_handler(void* socket_desc) {
     int client_socket = *(int*)socket_desc;
     char buffer[BUFFER_SIZE];
@@ -84,61 +69,16 @@ void* client_handler(void* socket_desc) {
         perror("recv failed");
 
     close(client_socket);
-    free(socket_desc); // Free allocated memory
+    free(socket_desc);
     pthread_exit(NULL);
 }
 
-void communicate_with_client(int server_socket) {
-    int client_socket, c;
-    struct sockaddr_in client_addr;
-    pthread_t thread_id;
-
-    c = sizeof(struct sockaddr_in);
-    printf("Server is ready to handle multiple clients.\n");
-
-    while ((client_socket = accept(server_socket, (struct sockaddr*)&client_addr, (socklen_t*)&c))) {
-        printf("New client connected: %s\n", inet_ntoa(client_addr.sin_addr));
-
-        int* new_sock = malloc(sizeof(int));
-        *new_sock = client_socket;
-
-        if (pthread_create(&thread_id, NULL, client_handler, (void*)new_sock) < 0) {
-            perror("Could not create thread");
-            free(new_sock);
-        } else {
-            printf("Client handler assigned, thread ID: %ld\n", thread_id);
+void communicate_with_client(int server_socket, struct sockaddr_in client_addr) {
+    // Listen for incoming connections
+    socklen_t client_len = sizeof(client_addr);
+    int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+        if (client_socket >= 0) {
+            add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+            printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         }
-    }
-
-    if (client_socket < 0) {
-        perror("Accept failed");
->>>>>>> 3f60bcd261972c1d4ad5237ba7335a2481e17965
-    }
-
-    if (recv_len == 0)
-        printf("Client disconnected\n");
-    else
-        perror("recv failed");**/
-
-    close(client_socket);
-    free(socket_desc); // Free allocated memory
-    return;
-}
-
-int communicate_with_client(int server_socket) {
-    int client_socket, c;
-    struct sockaddr_in client_addr;
-    c = sizeof(struct sockaddr_in);
-
-      // Always loop until the server is intentionally stopped
-        client_socket = accept(server_socket, (struct sockaddr*)&client_addr, (socklen_t*)&c);
-
-        if (client_socket < 0) {
-            perror("Accept failed");
-            return -1;  // Exit the loop if accept() fails
-        }
-
-        printf("New client connected: %s\n", inet_ntoa(client_addr.sin_addr));
-
-        return client_socket;
 }
