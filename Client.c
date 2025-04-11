@@ -45,14 +45,14 @@ int connect_to_peer(const char* host, int port) {
         return -1;
     }
 
-    // Wait up to 5 seconds for connection
+    // Set timer of 5 seconds to connect before timeout
     fd_set fdset;
     struct timeval tv;
     FD_ZERO(&fdset);
     FD_SET(sock, &fdset);
     tv.tv_sec = 5;
     tv.tv_usec = 0;
-
+    
     if (select(sock + 1, NULL, &fdset, NULL, &tv) == 1) {
         int so_error;
         socklen_t len = sizeof(so_error);
