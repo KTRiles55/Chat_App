@@ -4,10 +4,18 @@
 #include <unistd.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include <netdb.h>
+#include <pthread.h>
 #include "Server.h"
 #include "Command_handler.h"
 #include "Client.h"
+#include "connection_manager.h"
+
+void* listener_thread_func(void* arg) {
+    int server_socket = *(int*)arg;
+    struct sockaddr_in client_addr;
+    communicate_with_client(server_socket, client_addr);
+    return NULL;
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -15,10 +23,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    Server s;
     int port = atoi(argv[1]);
-    char ipAddress[ADDRESS_LENGTH];
-    s = setSocketAddr(port, INADDR_ANY);
+    Server s = setSocketAddr(port, INADDR_ANY);  // Use INADDR_ANY for binding to all interfaces
 
     if (s.flag > 0) {
         fprintf(stderr, "Invalid port number.\n");
@@ -26,30 +32,44 @@ int main(int argc, char* argv[]) {
     }
 
     s.server_socket = activate_server(s.svr_addr);
+    if (s.server_socket < 0) {
+        fprintf(stderr, "Failed to start server.\n");
+        return -1;
+    }
+
+    // Start listener thread
+    pthread_t listener_thread;
+    pthread_create(&listener_thread, NULL, listener_thread_func, &s.server_socket);
+    pthread_detach(listener_thread);
+
+    printf("Chat server is up. Type 'help' for available commands.\n");
+
     char input[256];
+    char ipAddress[ADDRESS_LENGTH];
 
     while (1) {
         printf(">> ");
-        fgets(input, sizeof(input), stdin);
-        input[strcspn(input, "\n")] = 0;
+        fflush(stdout);
+        if (!fgets(input, sizeof(input), stdin)) break;
+        input[strcspn(input, "\n")] = 0;  // Remove newline
 
         if (strcmp(input, "exit") == 0) {
             break;
         }
-
         else if (strncmp(input, "connect", 7) == 0) {
-        struct sockaddr_in client_addr;
-        sscanf(input, "connect %s %d", ipAddress, &port);
-        client_addr.sin_addr.s_addr = inet_addr(ipAddress);
-        client_addr.sin_port = htons(port);
-        communicate_with_client(s.server_socket, client_addr);
-        connect_to_peer((const char*)ipAddress, port);
-    }
+            int peer_port;
+            if (sscanf(input, "connect %s %d", ipAddress, &peer_port) == 2) {
+                connect_to_peer(ipAddress, peer_port);
+            } else {
+                printf("Usage: connect <IP> <PORT>\n");
+            }
+        }
         else {
             execute_command(input);
         }
     }
 
     close(s.server_socket);
+    printf("Server shut down.\n");
     return 0;
 }

@@ -8,6 +8,8 @@
 #include <string.h>
 #include <pthread.h>
 #include "connection_manager.h"
+#include <sys/select.h>
+
 
 Server setSocketAddr(int port, uint32_t ip) {
     Server s;
@@ -67,18 +69,36 @@ void* client_handler(void* socket_desc) {
         printf("Client disconnected\n");
     else
         perror("recv failed");
-
     close(client_socket);
     free(socket_desc);
     pthread_exit(NULL);
 }
 
+
 void communicate_with_client(int server_socket, struct sockaddr_in client_addr) {
-    // Listen for incoming connections
     socklen_t client_len = sizeof(client_addr);
-    int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
-        if (client_socket >= 0) {
-            add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-            printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+    pthread_t thread;
+
+    while (1) {
+        int client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+        if (client_socket < 0) {
+            perror("accept failed");
+            continue;
         }
+
+        printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+        add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+        int* new_sock = malloc(sizeof(int));
+        *new_sock = client_socket;
+
+        if (pthread_create(&thread, NULL, client_handler, (void*)new_sock) != 0) {
+            perror("Failed to create thread");
+            close(client_socket);
+            free(new_sock);
+        } else {
+            pthread_detach(thread);
+        }
+    }
 }
