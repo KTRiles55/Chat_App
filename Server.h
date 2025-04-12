@@ -13,13 +13,12 @@ typedef struct Server {
     int client_socket;
     int flag;
     sockaddr_in svr_addr;
-    sockaddr_in conn_addr;
 
 } Server;
 
 Server setSocketAddr(int port, uint32_t ip);
 int activate_server(sockaddr_in s_addr);
 void* client_handler(void* socket_desc);
-void communicate_with_client(int server_socket, struct sockaddr_in client_addr);
+void communicate_with_client(int server_socket);
 
 #endif // SERVER_H

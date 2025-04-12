@@ -10,6 +10,7 @@
 #include "connection_manager.h"
 #include <sys/select.h>
 
+static struct sockaddr_in client_addr;
 
 Server setSocketAddr(int port, uint32_t ip) {
     Server s;
@@ -67,7 +68,8 @@ void* client_handler(void* socket_desc) {
 
     while ((recv_len = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
         buffer[recv_len] = '\0';
-        printf("Message received: %s\n", buffer);
+        printf("Message received from %s\nSender's Port: %d\nMessage: %s\n",
+              inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
     }
 
     if (recv_len == 0)
@@ -80,7 +82,7 @@ void* client_handler(void* socket_desc) {
 }
 
 
-void communicate_with_client(int server_socket, struct sockaddr_in client_addr) {
+void communicate_with_client(int server_socket) {
     socklen_t client_len = sizeof(client_addr);
     pthread_t thread;
     // Loop until incoming connection is accepted or not accepted
@@ -91,7 +93,7 @@ void communicate_with_client(int server_socket, struct sockaddr_in client_addr) 
             continue;
         }
 
-        printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        printf("New connection from %s:%d\n>>", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         // Once accepted, add new connection to list 
         add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 

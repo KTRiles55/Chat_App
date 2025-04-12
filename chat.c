@@ -5,16 +5,17 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <netdb.h>
 #include "Server.h"
 #include "Command_handler.h"
 #include "Client.h"
 #include "connection_manager.h"
 
+
 // Add new thread for handling accepting connections from new clients
 void* listener_thread_func(void* arg) {
     int server_socket = *(int*)arg;
-    struct sockaddr_in client_addr;
-    communicate_with_client(server_socket, client_addr);
+    communicate_with_client(server_socket);
     return NULL;
 }
 
@@ -58,10 +59,25 @@ int main(int argc, char* argv[]) {
         input[strcspn(input, "\n")] = 0;  // Remove newline
 
         if (strcmp(input, "exit") == 0) {
-            break;
+            // Close server socket and terminate remanining threads
+            terminate_all_connections();
+            close(s.server_socket);
+            printf("Server shut down.\n");
+            pthread_exit(NULL);
         }
         else if (strncmp(input, "myip", 4) == 0) {
-            printf("%d\n", s.svr_addr.sin_addr.s_addr);
+            char hostname[256];
+            struct hostent* host_entry;
+            char* ip;
+
+            gethostname(hostname, sizeof(hostname));
+            host_entry = gethostbyname(hostname);
+            if (host_entry) {
+                ip = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
+                printf("Local IP: %s\n", ip);
+            } else {
+                perror("gethostbyname");
+            }
         }
         else if (strncmp(input, "myport", 6) == 0) {
             printf("%d\n", port);
@@ -78,9 +94,5 @@ int main(int argc, char* argv[]) {
             execute_command(input);
         }
     }
-    // Close server socket and terminate remanining threads
-    close(s.server_socket);
-    pthread_exit(NULL);
-    printf("Server shut down.\n");
     return 0;
 }

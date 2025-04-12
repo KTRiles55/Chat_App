@@ -17,5 +17,6 @@ void add_connection(int sock, const char* ip, int port);
 Connection* get_connection(int id); 
 void list_connections(); 
 void terminate_connection(int id); 
+void terminate_all_connections();
 
 #endif
