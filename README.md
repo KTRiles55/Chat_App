@@ -34,7 +34,7 @@ https://code.visualstudio.com/download
 1. To execute the chat application program, first, make sure that the project folder is opened.
 2. Open the terminal by clicking "View" on the top bar and click "Terminal".
 3. Make sure that the terminal's current path is within the project directory.
-4. In case that you make any changes to the code, compile it with the command:
+4. Compile the source code files with the command (chat.c is the main program file):
 
 - gcc chat.c connection_manager.c Command_handler.c Server.c Client.c -o \<name of executable\> -Wall -pthread
 
