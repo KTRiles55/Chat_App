@@ -25,6 +25,9 @@ https://code.visualstudio.com/download
 ![Screenshot (326)](https://github.com/user-attachments/assets/4b2b7047-d884-4dfc-b197-4f847e610acc)
 
 6. Once you are connected to the environment, navigate to "Explorer" and click "Open Folder" to open the project folder.
+
+![Screenshot (327)](https://github.com/user-attachments/assets/06bc4771-7e09-4536-b170-a7ea15eefd9c)
+
 7. Now you can execute the project.
 
 ## Steps:
