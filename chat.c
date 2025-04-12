@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
     }
 
     int port = atoi(argv[1]);
+    // Set port number and ip to server socket address
     Server s = setSocketAddr(port, INADDR_ANY);
 
     if (s.flag > 0) {
@@ -34,21 +35,23 @@ int main(int argc, char* argv[]) {
         return s.flag;
     }
 
+    // Initiate bind and listening socket
     s.server_socket = activate_server(s.svr_addr);
     if (s.server_socket < 0) {
         fprintf(stderr, "Failed to start server.\n");
         return -1;
     }
 
+    // Create thread for listening socket
     pthread_t listener_thread;
     pthread_create(&listener_thread, NULL, listener_thread_func, &s.server_socket);
+    // Detach thread to terminate freely when disconnected
     pthread_detach(listener_thread);
-
     printf("Chat server is up. Type 'help' for available commands.\n");
 
     char input[256];
     char ipAddress[ADDRESS_LENGTH];
-
+    // Start loop to accept user input until "exit" is entered
     while (1) {
         printf(">> ");
         fflush(stdout);
@@ -56,10 +59,7 @@ int main(int argc, char* argv[]) {
         input[strcspn(input, "\n")] = 0;
 
         if (strcmp(input, "exit") == 0) {
-            terminate_all_connections();
-            close(s.server_socket);
-            printf("Server shut down.\n");
-            pthread_exit(NULL);
+            break;
         }
         else if (strncmp(input, "myip", 4) == 0) {
             int sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
                 perror("socket");
                 continue;
             }
-
+            // Get host information from public DNS server
             const char* kGoogleDnsIp = "8.8.8.8";
             int dns_port = 53;
 
@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
             serv.sin_addr.s_addr = inet_addr(kGoogleDnsIp);
             serv.sin_port = htons(dns_port);
 
+            // Retrieve ip address from connection to DNS server
             int err = connect(sock, (const struct sockaddr*)&serv, sizeof(serv));
             if (err == -1) {
                 perror("connect");
@@ -86,6 +87,7 @@ int main(int argc, char* argv[]) {
 
             struct sockaddr_in name;
             socklen_t namelen = sizeof(name);
+            // Read from socket 
             err = getsockname(sock, (struct sockaddr*)&name, &namelen);
             if (err == -1) {
                 perror("getsockname");
@@ -118,5 +120,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Close all sockets and connections
+    terminate_all_connections();
+    close(s.server_socket);
+    printf("Server shut down.\n");
     return 0;
 }
