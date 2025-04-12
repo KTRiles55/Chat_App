@@ -60,10 +60,7 @@ int main(int argc, char* argv[]) {
 
         if (strcmp(input, "exit") == 0) {
             // Close server socket and terminate remanining threads
-            terminate_all_connections();
-            close(s.server_socket);
-            printf("Server shut down.\n");
-            pthread_exit(NULL);
+            break;
         }
         else if (strncmp(input, "myip", 4) == 0) {
             char hostname[256];
@@ -94,5 +91,10 @@ int main(int argc, char* argv[]) {
             execute_command(input);
         }
     }
+
+    terminate_all_connections();
+    shutdown(s.server_socket, SHUT_WR);
+    close(s.server_socket);
+    printf("Server shut down.\n");
     return 0;
 }

@@ -12,7 +12,7 @@
 
 static struct sockaddr_in client_addr;
 
-Server setSocketAddr(int port, uint32_t ip) {
+Server setSocketAddr(uint16_t port, uint32_t ip) {
     Server s;
     s.flag = 0;
 
@@ -23,7 +23,7 @@ Server setSocketAddr(int port, uint32_t ip) {
     } else {
         // Configure server socket address
         s.svr_addr.sin_family = AF_INET;
-        s.svr_addr.sin_port = ntohs(port);
+        s.svr_addr.sin_port = htons(port);
         s.svr_addr.sin_addr.s_addr = htonl(ip);
         s.client_socket = -1;
     }
@@ -75,7 +75,7 @@ void* client_handler(void* socket_desc) {
     if (recv_len == 0)
         printf("Client disconnected\n");
     else
-        perror("recv failed");
+        perror("recv failed\n");
     close(client_socket);
     free(socket_desc);
     pthread_exit(NULL);
@@ -93,7 +93,7 @@ void communicate_with_client(int server_socket) {
             continue;
         }
 
-        printf("New connection from %s:%d\n>>", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         // Once accepted, add new connection to list 
         add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 

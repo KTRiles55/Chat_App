@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/socket.h>
 #include "connection_manager.h"
 
 Connection connections[MAX_CONNECTIONS];
@@ -38,6 +39,7 @@ void list_connections() {
 void terminate_connection(int id) {
     for (int i = 0; i < connection_count; i++) {
         if (connections[i].id == id) {
+            shutdown(connections[i].socket_fd, SHUT_WR);
             close(connections[i].socket_fd);
             printf("Connection %d terminated.\n", id);
             for (int j = i; j < connection_count - 1; j++) {
