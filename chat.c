@@ -15,7 +15,8 @@
 // Add new thread for handling accepting connections from new clients
 void* listener_thread_func(void* arg) {
     int server_socket = *(int*)arg;
-    communicate_with_client(server_socket);
+    struct sockaddr_in client_addr;
+    communicate_with_client(server_socket, client_addr);
     return NULL;
 }
 
@@ -26,7 +27,6 @@ int main(int argc, char* argv[]) {
     }
 
     int port = atoi(argv[1]);
-    // Assign port and machine's ip address to server socket
     Server s = setSocketAddr(port, INADDR_ANY);
 
     if (s.flag > 0) {
@@ -34,47 +34,73 @@ int main(int argc, char* argv[]) {
         return s.flag;
     }
 
-    // Bind server socket to address and make it listen for incoming connections
     s.server_socket = activate_server(s.svr_addr);
     if (s.server_socket < 0) {
         fprintf(stderr, "Failed to start server.\n");
         return -1;
     }
 
-    // Create a listener socket thread
     pthread_t listener_thread;
     pthread_create(&listener_thread, NULL, listener_thread_func, &s.server_socket);
-    // Detach thread from join operations to terminate freely
     pthread_detach(listener_thread);
 
     printf("Chat server is up. Type 'help' for available commands.\n");
 
     char input[256];
     char ipAddress[ADDRESS_LENGTH];
-    // Start loop for input commands until "exit" is entered
+
     while (1) {
         printf(">> ");
         fflush(stdout);
         if (!fgets(input, sizeof(input), stdin)) break;
-        input[strcspn(input, "\n")] = 0;  // Remove newline
+        input[strcspn(input, "\n")] = 0;
 
         if (strcmp(input, "exit") == 0) {
-            // Close server socket and terminate remanining threads
-            break;
+            terminate_all_connections();
+            close(s.server_socket);
+            printf("Server shut down.\n");
+            pthread_exit(NULL);
         }
         else if (strncmp(input, "myip", 4) == 0) {
-            char hostname[256];
-            struct hostent* host_entry;
-            char* ip;
-
-            gethostname(hostname, sizeof(hostname));
-            host_entry = gethostbyname(hostname);
-            if (host_entry) {
-                ip = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
-                printf("Local IP: %s\n", ip);
-            } else {
-                perror("gethostbyname");
+            int sock = socket(AF_INET, SOCK_DGRAM, 0);
+            if (sock == -1) {
+                perror("socket");
+                continue;
             }
+
+            const char* kGoogleDnsIp = "8.8.8.8";
+            int dns_port = 53;
+
+            struct sockaddr_in serv;
+            memset(&serv, 0, sizeof(serv));
+            serv.sin_family = AF_INET;
+            serv.sin_addr.s_addr = inet_addr(kGoogleDnsIp);
+            serv.sin_port = htons(dns_port);
+
+            int err = connect(sock, (const struct sockaddr*)&serv, sizeof(serv));
+            if (err == -1) {
+                perror("connect");
+                close(sock);
+                continue;
+            }
+
+            struct sockaddr_in name;
+            socklen_t namelen = sizeof(name);
+            err = getsockname(sock, (struct sockaddr*)&name, &namelen);
+            if (err == -1) {
+                perror("getsockname");
+                close(sock);
+                continue;
+            }
+
+            char buffer[INET_ADDRSTRLEN];
+            const char* p = inet_ntop(AF_INET, &name.sin_addr, buffer, sizeof(buffer));
+            if (p != NULL) {
+                printf("Local IP: %s\n", buffer);
+            } else {
+                printf("Failed to get local IP address.\n");
+            }
+            close(sock);
         }
         else if (strncmp(input, "myport", 6) == 0) {
             printf("%d\n", port);
@@ -92,9 +118,5 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    terminate_all_connections();
-    shutdown(s.server_socket, SHUT_WR);
-    close(s.server_socket);
-    printf("Server shut down.\n");
     return 0;
 }

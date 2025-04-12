@@ -1,4 +1,3 @@
-// Done by Kenneth
 #include "Server.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +81,7 @@ void* client_handler(void* socket_desc) {
 }
 
 
-void communicate_with_client(int server_socket) {
+void communicate_with_client(int server_socket,struct sockaddr_in client_addr) {
     socklen_t client_len = sizeof(client_addr);
     pthread_t thread;
     // Loop until incoming connection is accepted or not accepted
