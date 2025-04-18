@@ -9,7 +9,7 @@
 #include "connection_manager.h"
 #include <sys/select.h>
 
-static struct sockaddr_in client_addr;
+static struct sockaddr_in client_address;
 
 Server setSocketAddr(uint16_t port, uint32_t ip) {
     Server s;
@@ -68,7 +68,7 @@ void* client_handler(void* socket_desc) {
     while ((recv_len = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
         buffer[recv_len] = '\0';
         printf("Message received from %s\nSender's Port: %d\nMessage: %s\n",
-              inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), buffer);
+              inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port), buffer);
     }
 
     if (recv_len == 0)
@@ -92,7 +92,9 @@ void communicate_with_client(int server_socket, struct sockaddr_in client_addr) 
             continue;
         }
 
-        printf("New connection from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        client_address.sin_addr = client_addr.sin_addr;
+        client_address.sin_port = client_addr.sin_port;
+        printf("New connection from %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
         // Once accepted, add new connection to list 
         add_connection(client_socket, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
