@@ -7,10 +7,35 @@
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <pthread.h>
 #include <sys/select.h>
 #include "connection_manager.h"
 
 #define h_addr h_addr_list[0]
+
+static struct sockaddr_in server_address;
+
+void* receiver_thread(void* arg) {
+    int sock = *(int*)arg;
+    char buffer[1024];
+    int bytes_received;
+
+    while ((bytes_received = recv(sock, buffer, sizeof(buffer) - 1, 0)) > 0) {
+        buffer[bytes_received] = '\0';
+        printf("Message received from %s\nSender's Port: %d\nMessage: %s\n",
+            inet_ntoa(server_address.sin_addr), ntohs(server_address.sin_port), buffer);
+        fflush(stdout);
+    }
+
+    if (bytes_received == 0) {
+        printf("Server disconnected.\n");
+    } else {
+        perror("recv failed");
+    }
+
+    close(sock);
+    pthread_exit(NULL);
+}
 
 int connect_to_peer(const char* host, int port) {
     int sock;
@@ -73,8 +98,17 @@ int connect_to_peer(const char* host, int port) {
     fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) & ~O_NONBLOCK);
 
     // Add connection
+    server_address.sin_addr = *(struct in_addr*)server->h_addr;
+    server_address.sin_port = port;
     add_connection(sock, inet_ntoa(*(struct in_addr*)server->h_addr), port);
     printf("Connected to %s:%d\n", inet_ntoa(*(struct in_addr*)server->h_addr), port);
+    // NEW: Create thread to listen for server messages
+    pthread_t recv_thread;
+    int* sock_copy = malloc(sizeof(int));
+    *sock_copy = sock;
+    pthread_create(&recv_thread, NULL, receiver_thread, sock_copy);
+    pthread_detach(recv_thread);
+
     return sock;
 }
 

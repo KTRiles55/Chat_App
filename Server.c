@@ -63,8 +63,6 @@ void* client_handler(void* socket_desc) {
     char buffer[BUFFER_SIZE];
     int recv_len;
 
-    send(client_socket, "Connected to chat server\n", 25, 0);
-
     while ((recv_len = recv(client_socket, buffer, BUFFER_SIZE - 1, 0)) > 0) {
         buffer[recv_len] = '\0';
         printf("Message received from %s\nSender's Port: %d\nMessage: %s\n",
